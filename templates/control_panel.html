@@ -1,0 +1,104 @@
+<!-- templates/control_panel.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление шаговыми двигателями</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Система управления шаговыми двигателями</h1>
+            <div class="status" id="systemStatus">
+                <span class="status-indicator"></span>
+                <span>Загрузка...</span>
+            </div>
+        </header>
+
+        <main>
+            <section class="control-panel">
+                <h2>📊 Текущее состояние</h2>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <label>Горизонтальная ось:</label>
+                        <span id="currentH">0.0°</span>
+                    </div>
+                    <div class="status-item">
+                        <label>Вертикальная ось:</label>
+                        <span id="currentV">0.0°</span>
+                    </div>
+                    <div class="status-item">
+                        <label>Удержание:</label>
+                        <span id="holdingStatus">Выкл</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="movement-control">
+                <h2>🎮 Управление движением</h2>
+                <div class="control-grid">
+                    <div class="control-group">
+                        <h3>Абсолютное позиционирование</h3>
+                        <form id="moveForm">
+                            <div class="input-group">
+                                <label>Горизонталь (°):</label>
+                                <input type="number" id="hAngle" min="0" max="360" step="0.1" value="0">
+                            </div>
+                            <div class="input-group">
+                                <label>Вертикаль (°):</label>
+                                <input type="number" id="vAngle" min="0" max="90" step="0.1" value="0">
+                            </div>
+                            <div class="input-group">
+                                <label>Скорость:</label>
+                                <input type="range" id="speed" min="1" max="20" value="10">
+                                <span id="speedValue">10 град/сек</span>
+                            </div>
+                            <button type="submit">Переместить</button>
+                        </form>
+                    </div>
+
+                    <div class="control-group">
+                        <h3>Геометрический джог</h3>
+                        <div class="jog-buttons">
+                            <div class="axis-control">
+                                <h4>Горизонтальная ось</h4>
+                                <div class="button-group">
+                                    <button onclick="jog('horizontal', 'negative')">← Назад</button>
+                                    <button onclick="jog('horizontal', 'positive')">Вперед →</button>
+                                </div>
+                                <div class="jog-info">
+                                    Множитель: <span id="hMultiplier">×1</span>
+                                </div>
+                            </div>
+                            <div class="axis-control">
+                                <h4>Вертикальная ось</h4>
+                                <div class="button-group">
+                                    <button onclick="jog('vertical', 'negative')">← Вниз</button>
+                                    <button onclick="jog('vertical', 'positive')">Вверх →</button>
+                                </div>
+                                <div class="jog-info">
+                                    Множитель: <span id="vMultiplier">×1</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="system-controls">
+                <h2>⚙️ Системные команды</h2>
+                <div class="system-buttons">
+                    <button onclick="homeAxis('horizontal')" class="btn-home">🏠 Ноль горизонтали</button>
+                    <button onclick="homeAxis('vertical')" class="btn-home">🏠 Ноль вертикали</button>
+                    <button onclick="emergencyStop()" class="btn-stop">🛑 Аварийная остановка</button>
+                    <button onclick="updateStatus()" class="btn-refresh">🔄 Обновить статус</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
