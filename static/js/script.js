@@ -61,9 +61,13 @@ function updateUI(data) {
 }
 
 async function moveToCoordinates() {
+    console.log("Функция moveToCoordinates вызвана");
+
     const hAngle = parseFloat(document.getElementById('hAngle').value);
     const vAngle = parseFloat(document.getElementById('vAngle').value);
     const speed = parseFloat(document.getElementById('speed').value);
+
+    console.log("Параметры:", { hAngle, vAngle, speed }); // Отладочное сообщение
 
     try {
         const response = await fetch(`${API_BASE}/api/move`, {
@@ -77,6 +81,8 @@ async function moveToCoordinates() {
                 speed: speed
             })
         });
+
+        console.log("Ответ сервера:", response); // Отладочное сообщение
 
         const data = await response.json();
         
