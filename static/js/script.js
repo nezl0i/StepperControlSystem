@@ -36,7 +36,7 @@ async function updateStatus() {
             updateUI(data);
         }
     } catch (error) {
-        console.error('Ошибка получения статуса:', error);
+//        console.error('Ошибка получения статуса:', error);
         showError('Не удалось получить статус системы');
     }
 }
@@ -185,7 +185,104 @@ function showError(message) {
 }
 
 function showNotification(message, type = 'info') {
-    // Реализация уведомлений (можно использовать toast библиотеку)
-    console.log(`[${type}] ${message}`);
-    alert(`[${type.toUpperCase()}] ${message}`);
+    // Создаем контейнер для уведомлений если его нет
+    let container = document.getElementById('notification-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notification-container';
+        container.className = 'notification-container';
+        document.body.appendChild(container);
+    }
+
+    // Создаем уведомление
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+
+    // Иконка в зависимости от типа
+    let icon = '💡';
+    switch (type) {
+        case 'success':
+            icon = '✅';
+            break;
+        case 'error':
+            icon = '❌';
+            break;
+        case 'warning':
+            icon = '⚠️';
+            break;
+        case 'info':
+            icon = 'ℹ️';
+            break;
+    }
+
+    notification.innerHTML = `
+        <span class="notification-icon">${icon}</span>
+        <span class="notification-content">${message}</span>
+        <button class="notification-close" onclick="this.parentElement.remove()">×</button>
+    `;
+
+    // Добавляем уведомление в контейнер
+    container.appendChild(notification);
+
+    // Анимация появления
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+
+    // Автоматическое скрытие через 5 секунд
+    const autoRemove = setTimeout(() => {
+        hideNotification(notification);
+    }, 5000);
+
+    // Останавливаем таймер при наведении
+    notification.addEventListener('mouseenter', () => {
+        clearTimeout(autoRemove);
+    });
+
+    // Запускаем таймер снова когда убираем мышь
+    notification.addEventListener('mouseleave', () => {
+        setTimeout(() => {
+            hideNotification(notification);
+        }, 3000);
+    });
+
+    // Обработчик закрытия по клику на крестик
+    notification.querySelector('.notification-close').addEventListener('click', () => {
+        clearTimeout(autoRemove);
+        hideNotification(notification);
+    });
 }
+
+function hideNotification(notification) {
+    notification.classList.remove('show');
+    notification.classList.add('hide');
+
+    // Удаляем элемент после анимации
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.parentElement.removeChild(notification);
+        }
+    }, 300);
+}
+
+function showSuccess(message) {
+    showNotification(message, 'success');
+}
+
+function showError(message) {
+    showNotification(message, 'error');
+}
+
+function showWarning(message) {
+    showNotification(message, 'warning');
+}
+
+function showInfo(message) {
+    showNotification(message, 'info');
+}
+
+// Примеры использования:
+// showSuccess('Движение успешно начато!');
+// showError('Ошибка подключения к серверу');
+// showWarning('Достигнут предел движения');
+// showInfo('Система инициализирована');
