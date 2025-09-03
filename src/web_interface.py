@@ -1,46 +1,33 @@
 from flask import Flask, render_template, request, jsonify
-from control_system import StepperControlSystem, MovementCommand
+from control_system import StepperControlSystem, MovementCommand, AxisConfig
 from raspberry_pi_hw import RaspberryPiHardware
+from config import DEFAULT_AXES_CONFIG, DEFAULT_PIN_CONFIG
 import logging
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='../templates', static_folder='../static')
 control_system = None
 
 def create_app(config=None):
     global control_system
-    
-    # Конфигурация по умолчанию
-    default_config = {
-        'axes': {
-            'horizontal': {
-                'steps_per_degree': 100.0,
-                'max_angle': 360.0,
-                'min_angle': 0.0,
-                'homing_pin': 5,
-                'max_speed': 20.0
-            },
-            'vertical': {
-                'steps_per_degree': 150.0,
-                'max_angle': 90.0,
-                'min_angle': 0.0,
-                'homing_pin': 6,
-                'max_speed': 10.0
-            }
-        },
-        'pins': {
-            'horizontal': [17, 18, 27, 22],
-            'vertical': [23, 24, 25, 4],
-            'endstops': [5, 6]
-        }
-    }
-    
-    config = config or default_config
-    
+
+    # Конвертируем словарь конфигурации в объекты AxisConfig
+    axes_config = {}
+    for axis_name, axis_data in DEFAULT_AXES_CONFIG.items():
+        axes_config[axis_name] = AxisConfig(
+            name=axis_name,
+            steps_per_degree=axis_data['steps_per_degree'],
+            max_angle=axis_data['max_angle'],
+            min_angle=axis_data['min_angle'],
+            homing_pin=axis_data['homing_pin'],
+            max_speed=axis_data.get('max_speed', 10.0),
+            holding_torque=axis_data.get('holding_torque', True)
+        )
+
     # Инициализация аппаратной части
-    hardware = RaspberryPiHardware(config['pins'])
-    
+    hardware = RaspberryPiHardware(DEFAULT_PIN_CONFIG)
+
     # Инициализация системы управления
-    control_system = StepperControlSystem(config['axes'], hardware)
+    control_system = StepperControlSystem(axes_config, hardware)
     
     return app
 

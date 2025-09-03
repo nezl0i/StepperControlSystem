@@ -18,24 +18,24 @@ class JogConfig:
     delta_max: float
     reset_timeout: float
 
-# Конфигурация по умолчанию
+# Конфигурация по умолчанию (словарь для удобства редактирования)
 DEFAULT_AXES_CONFIG = {
-    'horizontal': AxisConfig(
-        name='horizontal',
-        steps_per_degree=100.0,
-        max_angle=360.0,
-        min_angle=0.0,
-        homing_pin=5,
-        max_speed=20.0
-    ),
-    'vertical': AxisConfig(
-        name='vertical',
-        steps_per_degree=150.0,
-        max_angle=90.0,
-        min_angle=0.0,
-        homing_pin=6,
-        max_speed=10.0
-    )
+    'horizontal': {
+        'steps_per_degree': 100.0,
+        'max_angle': 360.0,
+        'min_angle': 0.0,
+        'homing_pin': 5,
+        'max_speed': 20.0,
+        'holding_torque': True
+    },
+    'vertical': {
+        'steps_per_degree': 150.0,
+        'max_angle': 90.0,
+        'min_angle': 0.0,
+        'homing_pin': 6,
+        'max_speed': 10.0,
+        'holding_torque': True
+    }
 }
 
 DEFAULT_JOG_CONFIG = {

@@ -1,7 +1,8 @@
 import argparse
 import logging
-from control_system import StepperControlSystem
+from control_system import StepperControlSystem, AxisConfig
 from raspberry_pi_hw import RaspberryPiHardware
+from simulated_hw import SimulatedHardware
 from config import DEFAULT_AXES_CONFIG, DEFAULT_PIN_CONFIG, LOG_CONFIG
 
 def setup_logging():
@@ -21,8 +22,20 @@ def main():
     logger = logging.getLogger("Main")
     
     try:
+        # Конвертируем словарь конфигурации в объекты AxisConfig
+        axes_config = {}
+        for axis_name, axis_data in DEFAULT_AXES_CONFIG.items():
+            axes_config[axis_name] = AxisConfig(
+                name=axis_name,
+                steps_per_degree=axis_data['steps_per_degree'],
+                max_angle=axis_data['max_angle'],
+                min_angle=axis_data['min_angle'],
+                homing_pin=axis_data['homing_pin'],
+                max_speed=axis_data.get('max_speed', 10.0),
+                holding_torque=axis_data.get('holding_torque', True)
+            )
+
         if args.simulate:
-            from .simulated_hw import SimulatedHardware
             hardware = SimulatedHardware(DEFAULT_PIN_CONFIG)
             logger.info("Запуск в режиме симуляции")
         else:
