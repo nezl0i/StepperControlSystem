@@ -1,6 +1,6 @@
 from enum import Enum
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List
 import threading
 import time
 import logging
@@ -51,7 +51,7 @@ class StepperControlSystem:
         }
         
         self.jog_multipliers = {name: 0 for name in axes_config}
-        self.last_jog_time = {name: 0 for name in axes_config}
+        self.last_jog_time = {name: 0.0 for name in axes_config}
         
         self.command_queue = []
         self.is_running = True
@@ -73,7 +73,8 @@ class StepperControlSystem:
             logger.error(f"Ошибка валидации: {e}")
             return False
 
-    def convert_to_angles(self, coordinates: Dict) -> Dict[str, float]:
+    @staticmethod
+    def convert_to_angles(coordinates: Dict) -> Dict[str, float]:
         return coordinates
 
     def plan_trajectory(self, target_angles: Dict[str, float]) -> List[Dict[str, float]]:
@@ -91,14 +92,14 @@ class StepperControlSystem:
         
         return trajectory
 
-    def execute_movement(self, trajectory: List[Dict[str, float]]):
+    def execute_movement(self, trajectory: List[Dict[str, float]], delay: float = 0.01):
         for point in trajectory:
             with self.lock:
                 for axis, angle in point.items():
                     steps = self._angle_to_steps(axis, angle)
                     self.hw.move_axis(axis, steps)
                     self.current_angles[axis] = angle
-            time.sleep(0.01)
+            time.sleep(delay)
 
     def _angle_to_steps(self, axis: str, angle: float) -> int:
         return int(angle * self.axes[axis].steps_per_degree)
@@ -118,16 +119,22 @@ class StepperControlSystem:
         
         threading.Thread(target=delayed_move, daemon=True).start()
 
-    def move_to_coordinates(self, coordinates: Dict[str, float]):
+    def move_to_coordinates(self, coordinates: Dict[str, float], speed: float = None):
         if not self.validate_coordinates(coordinates):
             return False
         
         target_angles = self.convert_to_angles(coordinates)
         trajectory = self.plan_trajectory(target_angles)
+
+        delay = 0.01  # значение по умолчанию
+        if speed is not None:
+            # Преобразуем скорость в задержку между шагами
+            # (это упрощенная реализация, можно сделать сложнее)
+            delay = max(0.001, min(0.1, 1.0 / (speed * 10)))
         
         with self.lock:
             self.target_angles = target_angles
-            self.execute_movement(trajectory)
+            self.execute_movement(trajectory, delay)
             
             for axis in coordinates:
                 self.set_holding_torque(axis, True)

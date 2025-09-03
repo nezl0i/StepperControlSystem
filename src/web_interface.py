@@ -64,11 +64,12 @@ def api_move():
 
         speed = float(data.get('speed', 10.0))
 
-        if control_system.move_to_coordinates(coordinates):
+        if control_system.move_to_coordinates(coordinates, speed):
             return jsonify({
                 'status': 'success',
                 'message': 'Движение начато',
-                'target_angles': coordinates
+                'target_angles': coordinates,
+                'speed': speed
             })
         else:
             return jsonify({
