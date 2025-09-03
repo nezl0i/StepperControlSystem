@@ -17,10 +17,14 @@ class RaspberryPiHardware(HardwareInterface):
     def move_axis(self, axis: str, steps: int):
         if axis not in self.pin_config:
             raise ValueError(f"Ось {axis} не найдена в конфигурации")
-        
+
+        print(f"Аппаратное перемещение: ось {axis}, шагов {steps}")  # Отладочное сообщение
+
         pins = self.pin_config[axis]
         direction = 1 if steps > 0 else -1
         steps = abs(steps)
+
+        print(f"Используемые пины: {pins}, направление: {direction}")  # Отладочное сообщение
         
         for _ in range(steps):
             for i, pin in enumerate(pins):
@@ -28,6 +32,9 @@ class RaspberryPiHardware(HardwareInterface):
             time.sleep(0.001)
             for pin in pins:
                 GPIO.output(pin, GPIO.LOW)
+
+        print(f"Аппаратное перемещение завершено")  # Отладочное сообщение
+
 
     def set_holding_torque(self, axis: str, enable: bool):
         pass

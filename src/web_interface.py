@@ -2,15 +2,23 @@ from flask import Flask, render_template, request, jsonify
 from control_system import StepperControlSystem, AxisConfig
 from raspberry_pi_hw import RaspberryPiHardware
 from config import DEFAULT_AXES_CONFIG, DEFAULT_PIN_CONFIG
-from flask_cors import CORS  # Добавляем импорт
+from flask_cors import CORS
+import argparse
 import logging
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 CORS(app)  # Включаем CORS для всех доменов
 control_system = None
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Web интерфейс управления шаговыми двигателями')
+    parser.add_argument('--simulate', action='store_true', help='Режим симуляции без реального оборудования')
+    parser.add_argument('--port', type=int, default=5000, help='Порт для веб-сервера')
+    parser.add_argument('--host', type=str, default='0.0.0.0', help='Хост для веб-сервера')
+    return parser.parse_args()
 
-def init_control_system():
+
+def init_control_system(simulate=False):
     """Инициализация системы управления"""
     global control_system
 
@@ -27,12 +35,24 @@ def init_control_system():
             holding_torque=axis_data.get('holding_torque', True)
         )
 
-    # Инициализация аппаратной части
-    hardware = RaspberryPiHardware(DEFAULT_PIN_CONFIG)
+    # Выбираем аппаратную часть в зависимости от режима
+    if simulate:
+        from simulated_hw import SimulatedHardware
+        hardware = SimulatedHardware(DEFAULT_PIN_CONFIG)
+        logging.info("🚀 Запуск в режиме СИМУЛЯЦИИ")
+    else:
+        try:
+            hardware = RaspberryPiHardware(DEFAULT_PIN_CONFIG)
+            print("🔧 Запуск с РЕАЛЬНЫМ оборудованием")
+        except Exception as e:
+            logging.error(f"⚠️  Ошибка инициализации реального оборудования: {e}")
+            logging.info("🔄 Переключаемся в режим симуляции")
+            from simulated_hw import SimulatedHardware
+            hardware = SimulatedHardware(DEFAULT_PIN_CONFIG)
 
     # Инициализация системы управления
     control_system = StepperControlSystem(axes_config, hardware)
-    logging.info("Система управления инициализирована")
+    logging.info("✅ Система управления инициализирована")
     return control_system
 
 
@@ -210,6 +230,7 @@ def api_health():
 
 
 if __name__ == '__main__':
+    args = parse_arguments()
     # Инициализация при прямом запуске
-    control_system = init_control_system()
+    control_system = init_control_system(simulate=args.simulate)
     app.run(host='0.0.0.0', port=5000, debug=True)

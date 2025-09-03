@@ -63,11 +63,22 @@ class StepperControlSystem:
 
     def validate_coordinates(self, coordinates: Dict[str, float]) -> bool:
         try:
+            print(f"Валидация координат: {coordinates}")  # Отладочное сообщение
+
             for axis, angle in coordinates.items():
                 if axis not in self.axes:
+                    print(f"Ось {axis} не найдена в конфигурации")  # Отладочное сообщение
                     raise ValueError(f"Ось {axis} не найдена")
+
+                min_angle = self.axes[axis].min_angle
+                max_angle = self.axes[axis].max_angle
+                print(f"Ось {axis}: угол {angle}, диапазон [{min_angle}, {max_angle}]")  # Отладочное сообщение
+
                 if not (self.axes[axis].min_angle <= angle <= self.axes[axis].max_angle):
+                    print(f"Угол {angle} вне диапазона для оси {axis}")  # Отладочное сообщение
                     raise ValueError(f"Угол {angle} вне диапазона для оси {axis}")
+
+            print("Валидация пройдена успешно")  # Отладочное сообщение
             return True
         except (ValueError, TypeError) as e:
             logger.error(f"Ошибка валидации: {e}")
@@ -93,12 +104,22 @@ class StepperControlSystem:
         return trajectory
 
     def execute_movement(self, trajectory: List[Dict[str, float]], delay: float = 0.01):
-        for point in trajectory:
+        """Выполнение движения по траектории"""
+        print(f"Начало выполнения движения по траектории")  # Отладочное сообщение
+
+        for i, point in enumerate(trajectory):
+
+            print(f"Точка {i + 1}/{len(trajectory)}: {point}")  # Отладочное сообщение
+
             with self.lock:
                 for axis, angle in point.items():
                     steps = self._angle_to_steps(axis, angle)
+                    print(f"Ось {axis}: угол {angle} -> {steps} шагов")  # Отладочное сообщение
+
                     self.hw.move_axis(axis, steps)
                     self.current_angles[axis] = angle
+                    print(f"Ось {axis} перемещена в {angle}°")  # Отладочное сообщение
+
             time.sleep(delay)
 
     def _angle_to_steps(self, axis: str, angle: float) -> int:
@@ -120,26 +141,38 @@ class StepperControlSystem:
         threading.Thread(target=delayed_move, daemon=True).start()
 
     def move_to_coordinates(self, coordinates: Dict[str, float], speed: float = None):
-        if not self.validate_coordinates(coordinates):
-            return False
-        
-        target_angles = self.convert_to_angles(coordinates)
-        trajectory = self.plan_trajectory(target_angles)
 
-        delay = 0.01  # значение по умолчанию
-        if speed is not None:
-            # Преобразуем скорость в задержку между шагами
-            # (это упрощенная реализация, можно сделать сложнее)
-            delay = max(0.001, min(0.1, 1.0 / (speed * 10)))
-        
-        with self.lock:
-            self.target_angles = target_angles
-            self.execute_movement(trajectory, delay)
-            
-            for axis in coordinates:
-                self.set_holding_torque(axis, True)
-        
-        return True
+        print(f"Попытка перемещения в координаты: {coordinates}")  # Отладочное сообщение
+        if not self.validate_coordinates(coordinates):
+            print("Валидация координат не пройдена")  # Отладочное сообщение
+            return False
+
+        try:
+            target_angles = self.convert_to_angles(coordinates)
+            print(f"Целевые углы: {target_angles}")  # Отладочное сообщение
+
+            trajectory = self.plan_trajectory(target_angles)
+            print(f"Сгенерировано точек траектории: {len(trajectory)}")  # Отладочное сообрование
+
+            delay = 0.01  # значение по умолчанию
+            if speed is not None:
+                # Преобразуем скорость в задержку между шагами
+                # (это упрощенная реализация, можно сделать сложнее)
+                delay = max(0.001, min(0.1, 1.0 / (speed * 10)))
+
+            with self.lock:
+                self.target_angles = target_angles
+                self.execute_movement(trajectory, delay)
+
+                for axis in coordinates:
+                    self.set_holding_torque(axis, True)
+
+            print("Перемещение успешно завершено")  # Отладочное сообщение
+            return True
+
+        except Exception as e:
+            print(f"Ошибка при перемещении: {e}")  # Отладочное сообщение
+            return False
 
     def stop_movement(self):
         with self.lock:
