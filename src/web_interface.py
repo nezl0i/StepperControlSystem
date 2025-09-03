@@ -94,14 +94,18 @@ def api_jog():
 
         data = request.json
         axis = data['axis']
-        direction = 1 if data['direction'] == 'positive' else -1
+        direction_str = data['direction']
+
+        # Преобразуем строковое направление в числовое
+        direction = 1 if direction_str == 'positive' else -1
 
         control_system.geometric_jog(axis, direction)
 
         return jsonify({
             'status': 'success',
             'axis': axis,
-            'direction': 'positive' if direction == 1 else 'negative'
+            'direction': direction_str,
+            'current_angle': control_system.current_angles.get(axis, 0)
         })
 
     except Exception as e:

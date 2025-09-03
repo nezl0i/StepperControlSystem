@@ -167,26 +167,40 @@ class StepperControlSystem:
         logger.info(f"Ось {axis} приведена в нулевое положение")
 
     def geometric_jog(self, axis: str, direction: int):
+        """Геометрический джог с проверкой границ"""
         if axis not in self.jog_config:
             logger.error(f"Конфигурация джога для оси {axis} не найдена")
             return
-        
+
         config = self.jog_config[axis]
         current_time = time.time()
-        
+
+        # Сброс множителя при превышении таймаута
         if current_time - self.last_jog_time[axis] > config.reset_timeout:
             self.jog_multipliers[axis] = 0
-        
+
+        # Расчет текущего шага
         delta = config.delta_initial * (config.ratio ** self.jog_multipliers[axis])
         delta = min(delta, config.delta_max) * direction
-        
+
+        # Вычисление целевого угла с проверкой границ
         target_angle = self.current_angles[axis] + delta
+        target_angle = max(self.axes[axis].min_angle, min(target_angle, self.axes[axis].max_angle))
+
+        # Если угол не изменился (достигнут предел), не выполняем движение
+        if abs(target_angle - self.current_angles[axis]) < 0.001:
+            logger.info(f"Ось {axis} достигла предела: {target_angle}°")
+            return
+
+        # Выполнение движения
         self.move_to_coordinates({axis: target_angle})
-        
+
+        # Увеличение множителя для следующего шага
         self.jog_multipliers[axis] += 1
         self.last_jog_time[axis] = current_time
-        
-        logger.info(f"Джог оси {axis}: Δ={delta:.3f}°, множитель ×{config.ratio**self.jog_multipliers[axis]:.1f}")
+
+        logger.info(
+            f"Джог оси {axis}: Δ={delta:.3f}°, текущий угол: {target_angle:.1f}°, множитель ×{config.ratio ** self.jog_multipliers[axis]:.1f}")
 
     def reset_jog_multiplier(self, axis: str):
         self.jog_multipliers[axis] = 0

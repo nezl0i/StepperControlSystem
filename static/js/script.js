@@ -100,14 +100,15 @@ async function jog(axis, direction) {
             },
             body: JSON.stringify({
                 axis: axis,
-                direction: direction
+                direction: direction // отправляем как строку
             })
         });
 
         const data = await response.json();
-        
+
         if (data.status === 'success') {
-            showSuccess(`Джог оси ${axis} выполнен`);
+            showSuccess(`Джог оси ${axis} (${direction}) выполнен`);
+            updateStatus(); // Обновляем статус после движения
         } else {
             showError(data.message || 'Ошибка джога');
         }
