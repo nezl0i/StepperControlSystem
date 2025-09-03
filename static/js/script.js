@@ -73,7 +73,8 @@ async function moveToCoordinates() {
         const response = await fetch(`${API_BASE}/api/move`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
                 h_angle: hAngle,
@@ -82,18 +83,25 @@ async function moveToCoordinates() {
             })
         });
 
-        console.log("Ответ сервера:", response); // Отладочное сообщение
+        console.log("Статус ответа:", response.status);
+        console.log("Заголовки ответа:", response.headers);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
         const data = await response.json();
+        console.log("Данные ответа:", data);
         
         if (data.status === 'success') {
             showSuccess('Движение начато');
+            updateStatus();
         } else {
             showError(data.message || 'Ошибка перемещения');
         }
     } catch (error) {
         console.error('Ошибка:', error);
-        showError('Не удалось выполнить перемещение');
+        showError(`Ошибка связи с сервером: ${error.message}`);
     }
 }
 

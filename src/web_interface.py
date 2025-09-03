@@ -2,9 +2,11 @@ from flask import Flask, render_template, request, jsonify
 from control_system import StepperControlSystem, AxisConfig
 from raspberry_pi_hw import RaspberryPiHardware
 from config import DEFAULT_AXES_CONFIG, DEFAULT_PIN_CONFIG
+from flask_cors import CORS  # Добавляем импорт
 import logging
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
+CORS(app)  # Включаем CORS для всех доменов
 control_system = None
 
 
@@ -50,21 +52,28 @@ def index():
 @app.route('/api/move', methods=['POST'])
 def api_move():
     try:
+        print("Получен запрос на /api/move")  # Отладочное сообщение
+        print("Заголовки:", request.headers)   # Отладочное сообщение
         if control_system is None:
+            print("Система не инициализирована")  # Отладочное сообщение
             return jsonify({
                 'status': 'error',
                 'message': 'Система не инициализирована'
             }), 500
 
         data = request.json
+        print("Полученные данные:", data)  # Отладочное сообщение
         coordinates = {
             'horizontal': float(data['h_angle']),
             'vertical': float(data['v_angle'])
         }
 
+        print("Преобразованные координаты:", coordinates)  # Отладочное сообщение
+
         speed = float(data.get('speed', 10.0))
 
         if control_system.move_to_coordinates(coordinates, speed):
+            print("Движение успешно начато")  # Отладочное сообщение
             return jsonify({
                 'status': 'success',
                 'message': 'Движение начато',
@@ -72,12 +81,14 @@ def api_move():
                 'speed': speed
             })
         else:
+            print("Неверные координаты")  # Отладочное сообщение
             return jsonify({
                 'status': 'error',
                 'message': 'Неверные координаты'
             }), 400
 
     except Exception as e:
+        print(f"Ошибка в api_move: {str(e)}")  # Отладочное сообщение
         return jsonify({
             'status': 'error',
             'message': str(e)
